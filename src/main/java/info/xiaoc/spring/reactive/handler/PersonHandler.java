@@ -4,16 +4,16 @@ import info.xiaoc.spring.reactive.bean.Person;
 import info.xiaoc.spring.reactive.repo.PersonRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
-import java.net.URI;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.http.MediaType.TEXT_EVENT_STREAM;
 import static org.springframework.web.reactive.function.BodyInserters.fromObject;
 
 public class PersonHandler {
@@ -50,5 +50,16 @@ public class PersonHandler {
         return personMono
                 .flatMap(person -> ServerResponse.ok().contentType(APPLICATION_JSON).body(fromObject(person)))
                 .switchIfEmpty(notFound);
+    }
+
+    public Mono<ServerResponse> getPeopleAsStream(ServerRequest request) {
+        logger.info("PersonHandler.getPeopleAsStream()...");
+        Flux<ServerSentEvent> people = repository.allPeopleAsStream()
+                .map(p -> ServerSentEvent.<Person>builder()
+                .event("Person")
+                .data(p)
+                .id(p.getId().toString())
+                .build());
+        return ServerResponse.ok().contentType(TEXT_EVENT_STREAM).body(people, ServerSentEvent.class);
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.http.MediaType.TEXT_EVENT_STREAM;
 import static org.springframework.web.reactive.function.server.RequestPredicates.*;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
@@ -33,6 +34,7 @@ public class PocApplication {
 	RouterFunction<ServerResponse> getPersonRouter() {
 		return route(GET("/person/{id}").and(accept(APPLICATION_JSON)), getPersonHandler()::getPerson)
 				.andRoute(GET("/person").and(accept(APPLICATION_JSON)), getPersonHandler()::listPeople)
-				.andRoute(POST("/person").and(contentType(APPLICATION_JSON)), getPersonHandler()::createPerson);
+				.andRoute(POST("/person").and(contentType(APPLICATION_JSON)), getPersonHandler()::createPerson)
+				.andRoute(GET("/personStream").and(accept(TEXT_EVENT_STREAM)), getPersonHandler()::getPeopleAsStream);
 	}
 }

@@ -6,7 +6,9 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuples;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -18,7 +20,7 @@ public class PersonRepository {
 
     private static final Logger logger = LoggerFactory.getLogger(PersonRepository.class);
 
-    private Map<Integer, Person> peopleMap;
+    private Map<Long, Person> peopleMap;
 
     private AtomicInteger idSequence;
 
@@ -38,10 +40,17 @@ public class PersonRepository {
         return Flux.fromIterable(peopleMap.values()).log();
     }
 
+    public Flux<Person> allPeopleAsStream() {
+        logger.info("PersonRepository.allPeopleAsStream()...");
+        return Flux.interval(Duration.ofSeconds(1))
+                .map(i -> new Person(i, "Person " + i))
+                .take(100);
+    }
+
     public Mono<Person> savePerson(Mono<Person> person) {
         logger.info("PersonRepository.savePerson()...");
         return person.log()
-                .map(p ->{p.setId(idSequence.addAndGet(1));return p;})
+                .map(p ->{p.setId(Long.valueOf(idSequence.addAndGet(1)));return p;})
                 .map(this::savePerson);
     }
 

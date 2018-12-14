@@ -13,16 +13,20 @@ public class Person {
     }
 
     public Person(Integer id, String name) {
+        this.id = id.longValue();
+        this.name = name;
+    }
+
+    public Person(Long id, String name) {
         this.id = id;
         this.name = name;
     }
 
-    public Integer getId() {
-
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -34,7 +38,7 @@ public class Person {
         this.name = name;
     }
 
-    private Integer id;
+    private Long id;
     private String name;
 
     @Override
