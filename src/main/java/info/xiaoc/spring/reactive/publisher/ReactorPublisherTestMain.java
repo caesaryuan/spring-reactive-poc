@@ -23,7 +23,7 @@ public class ReactorPublisherTestMain {
             tradeQueueSource.registerListener(new EventListener<Long>() {
                 @Override
                 public void onDataChunk(Collection<Long> chunk) {
-                    chunk.stream().forEach(sink::next);
+                    chunk.forEach(sink::next);
                 }
 
                 @Override
