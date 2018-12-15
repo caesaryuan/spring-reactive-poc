@@ -2,6 +2,7 @@ package info.xiaoc.spring.reactive.handler;
 
 import info.xiaoc.spring.reactive.bean.Person;
 import info.xiaoc.spring.reactive.repo.PersonRepository;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.codec.ServerSentEvent;
@@ -43,7 +44,7 @@ public class PersonHandler {
     }
 
     public Mono<ServerResponse> getPerson(ServerRequest request) {
-        int personId = Integer.valueOf(request.pathVariable("id"));
+        Long personId = Long.valueOf(request.pathVariable("id"));
         logger.info("PersonHandler.getPerson(" + personId + ")...");
         Mono<ServerResponse> notFound = ServerResponse.notFound().build();
         Mono<Person> personMono = this.repository.getPerson(personId);
@@ -54,8 +55,12 @@ public class PersonHandler {
 
     public Mono<ServerResponse> getPeopleAsStream(ServerRequest request) {
         logger.info("PersonHandler.getPeopleAsStream()...");
-        Flux<ServerSentEvent> people = repository.allPeopleAsStream()
-                .map(p -> ServerSentEvent.<Person>builder()
+        Integer startSeq = request.queryParam("seq")
+                .filter(StringUtils::isNumeric)
+                .map(Integer::valueOf).orElse(1);
+        logger.info("Start sequence = " + startSeq);
+        Flux<ServerSentEvent> people = repository.allPeopleAsStream(startSeq)
+                .map(p -> ServerSentEvent.builder()
                 .event("Person")
                 .data(p)
                 .id(p.getId().toString())

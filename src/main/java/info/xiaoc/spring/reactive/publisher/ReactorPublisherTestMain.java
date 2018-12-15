@@ -6,6 +6,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -21,10 +22,8 @@ public class ReactorPublisherTestMain {
         Flux<Long> bridge = Flux.create(sink -> {
             tradeQueueSource.registerListener(new EventListener<Long>() {
                 @Override
-                public void onDataChunk(List<Long> chunk) {
-                    for (Long tradeId : chunk) {
-                        sink.next(tradeId);
-                    }
+                public void onDataChunk(Collection<Long> chunk) {
+                    chunk.stream().forEach(sink::next);
                 }
 
                 @Override
@@ -34,7 +33,7 @@ public class ReactorPublisherTestMain {
             });
         }, FluxSink.OverflowStrategy.ERROR);
         bridge.publishOn(Schedulers.newParallel("TradePublishThread", 2), 1)
-                .subscribe(i -> publisher.publish(i));
+                .subscribe(publisher::publish);
         tradeQueueSource.start();
         try {
             TimeUnit.MILLISECONDS.sleep(60000);
