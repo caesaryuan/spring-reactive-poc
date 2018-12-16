@@ -1,14 +1,11 @@
 package info.xiaoc.spring.reactive.repo;
 
 import info.xiaoc.spring.reactive.bean.Person;
-import info.xiaoc.spring.reactive.publisher.EventListener;
+import info.xiaoc.spring.reactive.publisher.DataListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
-import reactor.util.function.Tuples;
 
 import java.time.Duration;
 import java.util.*;
@@ -66,7 +63,7 @@ public class PersonRepository {
         logger.info("PersonRepository.allPeopleAsStream(startSeq)...");
         return Flux.create(sink -> {
             ReactivePagingQueryManager<Person> queryManager = new ReactivePagingQueryManager<>(threadPool, this::getPeopleByPage, startSeq, pageSize);
-            queryManager.setListener(new EventListener<Person>() {
+            queryManager.setListener(new DataListener<Person>() {
                 @Override
                 public void onDataChunk(Collection<Person> chunk) {
                     chunk.forEach(sink::next);

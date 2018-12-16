@@ -1,6 +1,6 @@
 package info.xiaoc.spring.reactive.repo;
 
-import info.xiaoc.spring.reactive.publisher.EventListener;
+import info.xiaoc.spring.reactive.publisher.DataListener;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -9,7 +9,7 @@ import java.util.function.BiFunction;
 
 public class ReactivePagingQueryManager<T> {
 
-    private EventListener<T> listener;
+    private DataListener<T> listener;
 
     private ExecutorService executorService;
 
@@ -45,7 +45,7 @@ public class ReactivePagingQueryManager<T> {
         }
     }
 
-    public void setListener(EventListener<T> listener) {
+    public void setListener(DataListener<T> listener) {
         this.listener = listener;
     }
 }

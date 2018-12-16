@@ -19,7 +19,7 @@ public class PersonServerSentEventClient {
     public static void main(final String[] args) {
         final WebClient client = WebClient.create();
         client.get()
-                .uri("http://localhost:8080/personStream?seq=1234")
+                .uri("http://localhost:8080/personStream?seq=1")
                 .accept(TEXT_EVENT_STREAM)
                 .exchange()
                 .flatMapMany(response -> response.body(BodyExtractors.toFlux(new ParameterizedTypeReference<ServerSentEvent<Person>>() {

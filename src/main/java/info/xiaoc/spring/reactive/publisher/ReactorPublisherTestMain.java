@@ -2,12 +2,9 @@ package info.xiaoc.spring.reactive.publisher;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
-import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
-import java.time.Duration;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -20,7 +17,7 @@ public class ReactorPublisherTestMain {
         TimedTradeQueueSource tradeQueueSource = new TimedTradeQueueSource(10000, 100, tradeQueueDao);
         TradeQueuePublisher publisher = new TradeQueuePublisher(1000, 5000);
         Flux<Long> bridge = Flux.create(sink -> {
-            tradeQueueSource.registerListener(new EventListener<Long>() {
+            tradeQueueSource.registerListener(new DataListener<Long>() {
                 @Override
                 public void onDataChunk(Collection<Long> chunk) {
                     chunk.forEach(sink::next);

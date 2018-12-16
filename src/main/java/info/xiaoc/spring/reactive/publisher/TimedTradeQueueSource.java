@@ -17,7 +17,7 @@ public class TimedTradeQueueSource {
     private static final Logger logger = LoggerFactory.getLogger(TimedTradeQueueSource.class);
 
     private Timer timer = new Timer();
-    private List<EventListener<Long>> listeners = new ArrayList<>();
+    private List<DataListener<Long>> listeners = new ArrayList<>();
     private long queryIntervalMilliseconds;
     private int queryBatchSize;
     private MockTradeQueueDao tradeQueueDao;
@@ -28,7 +28,7 @@ public class TimedTradeQueueSource {
         this.tradeQueueDao = tradeQueueDao;
     }
 
-    public void registerListener(EventListener<Long> listener) {
+    public void registerListener(DataListener<Long> listener) {
         listeners.add(listener);
     }
 
@@ -38,7 +38,7 @@ public class TimedTradeQueueSource {
                 logger.info("Running query with batch size of " + queryBatchSize);
                 Flux<Long> pendingPublishingTradeIds = tradeQueueDao.getPendingPublishingTradeIds(queryBatchSize);
                 pendingPublishingTradeIds.collectList().subscribe(tradeIds -> {
-                    for (EventListener<Long> listener : listeners) {
+                    for (DataListener<Long> listener : listeners) {
                         listener.onDataChunk(tradeIds);
                     }
                 });
@@ -52,7 +52,7 @@ public class TimedTradeQueueSource {
     public void stop() {
         timer.cancel();
         logger.info("Stopped query task");
-        for (EventListener<Long> listener : listeners) {
+        for (DataListener<Long> listener : listeners) {
             listener.processComplete();
         }
     }
