@@ -74,7 +74,8 @@ public class PersonRepository {
                     sink.complete();
                 }
             });
-            queryManager.run();
+            sink.onDispose(queryManager::stop);
+            queryManager.start();
         });
     }
 

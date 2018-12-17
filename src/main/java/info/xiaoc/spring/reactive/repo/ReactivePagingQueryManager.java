@@ -1,6 +1,8 @@
 package info.xiaoc.spring.reactive.repo;
 
 import info.xiaoc.spring.reactive.publisher.DataListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -8,6 +10,8 @@ import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 
 public class ReactivePagingQueryManager<T> {
+
+    private static final Logger logger = LoggerFactory.getLogger(ReactivePagingQueryManager.class);
 
     private DataListener<T> listener;
 
@@ -19,6 +23,8 @@ public class ReactivePagingQueryManager<T> {
 
     private Integer pageSize;
 
+    private boolean stopped = false;
+
     public ReactivePagingQueryManager(ExecutorService executorService, BiFunction<Integer, Integer, List<T>> query, Integer startSeq, Integer pageSize) {
         this.executorService = executorService;
         this.query = query;
@@ -26,10 +32,14 @@ public class ReactivePagingQueryManager<T> {
         this.pageSize = pageSize;
     }
 
-    public void run() {
+    public void setListener(DataListener<T> listener) {
+        this.listener = listener;
+    }
+
+    public void start() {
         try {
             int resultSetSize = pageSize + 1;
-            while (resultSetSize > pageSize) {
+            while (resultSetSize > pageSize && !stopped) {
                 Future<List<T>> future = executorService.submit(() -> query.apply(startSeq, pageSize + 1));
                 List<T> result = future.get();
                 resultSetSize = result.size();
@@ -45,7 +55,8 @@ public class ReactivePagingQueryManager<T> {
         }
     }
 
-    public void setListener(DataListener<T> listener) {
-        this.listener = listener;
+    public void stop() {
+        logger.info("Query stopped.");
+        this.stopped = true;
     }
 }
