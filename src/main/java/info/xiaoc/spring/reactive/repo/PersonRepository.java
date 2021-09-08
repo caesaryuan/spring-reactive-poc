@@ -4,16 +4,16 @@ import info.xiaoc.spring.reactive.bean.Person;
 import info.xiaoc.spring.reactive.publisher.DataListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 /**
  * Created by ionst on 16/03/2017.
@@ -59,7 +59,7 @@ public class PersonRepository {
                 .take(100);
     }
 
-    public Flux<Person> allPeopleAsStream(int startSeq) {
+    public Flux<Person> allPeopleAsStream2(int startSeq) {
         logger.info("PersonRepository.allPeopleAsStream(startSeq)...");
         return Flux.create(sink -> {
             ReactivePagingQueryManager<Person> queryManager = new ReactivePagingQueryManager<>(threadPool, this::getPeopleByPage, startSeq, pageSize);
@@ -79,6 +79,29 @@ public class PersonRepository {
         });
     }
 
+    public Flux<Person> allPeopleAsStream(int startSeq) {
+        logger.info("PersonRepository.allPeopleAsStream(startSeq)...");
+        return Flux.create(sink -> {
+            Disposable.Composite disposable = Disposables.composite();
+            sink.onDispose(disposable);
+            allPeopleByPageRecursively(startSeq, sink, disposable);
+        });
+    }
+
+    private void allPeopleByPageRecursively(int startSeq, reactor.core.publisher.FluxSink<Person> sink, Disposable.Composite disposable) {
+        CompletableFuture<List<Person>> future = CompletableFuture.supplyAsync(()->getPeopleByPage(startSeq, pageSize + 1));
+        disposable.add(() -> future.cancel(true));
+        future.whenComplete((result, error) -> {
+            if (result.size() > pageSize) {
+                result.subList(0, pageSize).forEach(sink::next);
+                allPeopleByPageRecursively(startSeq + pageSize, sink, disposable);
+            } else {
+                result.forEach(sink::next);
+                sink.complete();
+            }
+        });
+    }
+
     private List<Person> getPeopleByPage(int startSeq, int pageSize) {
         Random random = new Random();
         logger.info("Running query...startSeq = " +  startSeq + " pageSize = " + pageSize);
@@ -89,6 +112,9 @@ public class PersonRepository {
         }
         List<Person> result = new ArrayList<>();
         for (int i = startSeq; i < startSeq + pageSize && i <= totalNumberOfPeople; i++) {
+//            if (i == 1000) {
+//                throw new RuntimeException("An error occurred.");
+//            }
             result.add(new Person(i, "Person " + i));
         }
         logger.info("Completed query...startSeq = " +  startSeq + " pageSize = " + pageSize + " result count = " + result.size());
