@@ -5,6 +5,7 @@ import info.xiaoc.spring.reactive.repo.PersonRepository;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -12,6 +13,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+
+import java.util.UUID;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.http.MediaType.TEXT_EVENT_STREAM;
@@ -59,12 +62,25 @@ public class PersonHandler {
                 .filter(StringUtils::isNumeric)
                 .map(Integer::valueOf).orElse(1);
         logger.info("Start sequence = " + startSeq);
-        Flux<ServerSentEvent> people = repository.allPeopleAsStream(startSeq)
-                .map(p -> ServerSentEvent.builder()
+        Flux<ServerSentEvent<Object>> people = repository.allPeopleAsStream(startSeq)
+                .map(this::personToSse).onErrorResume(e -> Mono.just(e).map(this::exceptionToSse));
+        return ServerResponse.ok().contentType(TEXT_EVENT_STREAM).body(people, new ParameterizedTypeReference<ServerSentEvent<Object>>(){});
+    }
+
+    private ServerSentEvent<Object> personToSse(Person p) {
+        return ServerSentEvent.builder()
                 .event("Person")
                 .data(p)
                 .id(p.getId().toString())
-                .build());
-        return ServerResponse.ok().contentType(TEXT_EVENT_STREAM).body(people, ServerSentEvent.class);
+                .build();
+    }
+
+    private ServerSentEvent<Object> exceptionToSse(Throwable e) {
+        logger.error("Exception thrown from stream.", e);
+        return ServerSentEvent.builder()
+                .event("Internal Error")
+                .data(e.getMessage())
+                .id(UUID.randomUUID().toString())
+                .build();
     }
 }

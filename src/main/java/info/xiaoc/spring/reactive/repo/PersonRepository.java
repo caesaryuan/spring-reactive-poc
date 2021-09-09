@@ -92,11 +92,14 @@ public class PersonRepository {
         CompletableFuture<List<Person>> future = CompletableFuture.supplyAsync(()->getPeopleByPage(startSeq, pageSize + 1));
         disposable.add(() -> future.cancel(true));
         future.whenComplete((result, error) -> {
+            if (error != null) {
+                sink.error(error);
+                return;
+            }
+            result.stream().limit(pageSize).forEach(sink::next);
             if (result.size() > pageSize) {
-                result.subList(0, pageSize).forEach(sink::next);
                 allPeopleByPageRecursively(startSeq + pageSize, sink, disposable);
             } else {
-                result.forEach(sink::next);
                 sink.complete();
             }
         });
@@ -112,9 +115,9 @@ public class PersonRepository {
         }
         List<Person> result = new ArrayList<>();
         for (int i = startSeq; i < startSeq + pageSize && i <= totalNumberOfPeople; i++) {
-//            if (i == 1000) {
-//                throw new RuntimeException("An error occurred.");
-//            }
+            if (i == 1000) {
+                throw new RuntimeException("An error occurred.");
+            }
             result.add(new Person(i, "Person " + i));
         }
         logger.info("Completed query...startSeq = " +  startSeq + " pageSize = " + pageSize + " result count = " + result.size());
